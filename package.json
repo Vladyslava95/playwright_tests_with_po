@@ -11,10 +11,8 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "dependencies": {
-    "@playwright/test": "^1.45.1"
-  },
   "devDependencies": {
+    "@playwright/test": "^1.47.2",
     "@types/node": "^20.14.10",
     "eslint": "^8.57.0",
     "eslint-config-airbnb-base": "^15.0.0",
