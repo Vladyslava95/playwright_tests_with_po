@@ -1,23 +1,19 @@
 import { expect } from '@playwright/test';
 import { test } from '../fixtures/base';
 
-test.describe('Saucedemo app basic tests', () => {
-    test('should login successfully', async (
-        /** @type {{ app: import('../pages/Application').Application }} */{ app },
-    ) => {
-        await app.login.navigate();
-        await app.login.performLogin('standard_user', 'secret_sauce');
+test.beforeEach(async ({app}) => {   
+    await app.login.navigate();
+    await app.login.performLogin('standard_user', 'secret_sauce');
+    await expect(app.inventory.headerTitle).toBeVisible();
+    expect(await app.inventory.inventoryItems.count()).toBeGreaterThanOrEqual(1);
+});
 
-        await expect(app.inventory.headerTitle).toBeVisible();
 
-        expect(await app.inventory.inventoryItems.count()).toBeGreaterThanOrEqual(1);
-    });
+test.describe('Saucedemo app basic tests', () => {   
 
     test('should add and remove product from the cart', async (
         /** @type {{ app: import('../pages/Application').Application }} */{ app },
-    ) => {
-        await app.login.navigate();
-        await app.login.performLogin('standard_user', 'secret_sauce');
+    ) => {        
         await app.inventory.addItemToCartById(0);
         expect(await app.inventory.getNumberOfItemsInCart()).toBe('1');
 
@@ -30,81 +26,69 @@ test.describe('Saucedemo app basic tests', () => {
 });
 
 test.describe('Saucedemo Unit 10 tests', () => {
-    test('sorting z-a', async (
-        /** @type {{ app: import('../pages/Application').Application }} */{ app },
-    ) => {
-        await app.login.navigate();
-        await app.login.performLogin('standard_user', 'secret_sauce');       
-        
-        const zaOption =  {sort: "za", getExpectedResult: (inventoryInitialOrder) => {
+    const sortOption = [
+        {sort: "za", sortByName: (inventoryInitialOrder) => {
             return inventoryInitialOrder.sort((a, b) => b.localeCompare(a));
-            }}        
-        const inventoryInitialOrder = await app.inventory.inventoryItemName.allTextContents();
-        await app.inventory.sortDropdown.selectOption({ value: zaOption.sort});
-        const actualOrder = await app.inventory.inventoryItemName.allTextContents();
-        const expectedOrder = zaOption.getExpectedResult(inventoryInitialOrder)
-        expect(actualOrder).toEqual(expectedOrder);
+            }},
+        {sort: "az", sortByName: (inventoryInitialOrder) => {
+                return inventoryInitialOrder.sort();
+            }},            
+        {sort: "lohi", sortByPrice: (inventoryInitialOrder) => {
+                return inventoryInitialOrder.sort((a, b) => Number(a) - Number(b));
+            }},
+        {sort: "hilo", getExpectedResultPrice: (productPriceInitialOrderToNumbers) => {
+                return productPriceInitialOrderToNumbers.sort((a, b) => Number(b) - Number(a));
+            }}
 
-        const azOption = {sort: "az", getExpectedResult: (inventoryInitialOrder) => {
-            return productInitialOrder.sort();
-            }}        
+    ];
 
-    });
-    test('sorting a-z', async (
+    for(const option of sortOption) {
+        test(` inventory sorting by ${option.sort}`, async (
+            /** @type {{ app: import('../pages/Application').Application }} */{ app },
+        ) => {       
+             if (option.sortByName) {
+                const inventoryInitialOrder = await app.inventory.inventoryItemName.allTextContents();
+                await app.inventory.sortDropdown.selectOption({ value: option.sort});
+                const actualOrder = await app.inventory.inventoryItemName.allTextContents();
+                const expectedOrder = option.sortByName(inventoryInitialOrder)
+                expect(actualOrder).toEqual(expectedOrder);
+
+             }  
+             if (option.sortByPrice) {
+                const inventoryInitialOrder = await app.inventory.inventoryPrice.allTextContents();
+                await app.inventory.sortDropdown.selectOption({ value: option.sort});
+                const inventoryInitialOrderToNumbers = inventoryInitialOrder.map((str) => parseFloat(str.replace('$', '')));
+                const actualOrder = ((await app.inventory.inventoryPrice.allTextContents()).map((str) => parseFloat(str.replace('$', ''))));
+                const expectedOrder = option.sortByPrice(inventoryInitialOrderToNumbers)
+                expect(actualOrder).toEqual(expectedOrder);
+
+             }    
+          
+            
+         });
+
+    };      
+   
+    test('adding to cart several products', async (
         /** @type {{ app: import('../pages/Application').Application }} */{ app },
-    ) => {
-        await app.login.navigate();
-        await app.login.performLogin('standard_user', 'secret_sauce');
-        const azOption = {sort: "az", getExpectedResult: (inventoryInitialOrder) => {
-            return inventoryInitialOrder.sort();
-            }}        
+    ) => {    
+        const addedProducts =  await app.inventory.addRandomProductsToCart();    
+        await app.baseSwagLab.openCartPage();
+        const cartItemNames = await app.shoppingCart.getCartNames();
+        const cartItemDescriptions = await app.shoppingCart.getCartDescriptions();
+        const cartItemPrices = await app.shoppingCart.getCartPrices();
 
-        const inventoryInitialOrder = await app.inventory.inventoryItemName.allTextContents();
-        await app.inventory.sortDropdown.selectOption({ value: azOption.sort});
-        const actualOrder = await app.inventory.inventoryItemName.allTextContents();
-        const expectedOrder = azOption.getExpectedResult(inventoryInitialOrder)
-        expect(actualOrder).toEqual(expectedOrder);
+        addedProducts.forEach((item) => {
+            expect(cartItemNames).toContain(item.name);
+            expect(cartItemDescriptions).toContain(item.description);
+            expect(cartItemPrices).toContain(item.price);
+        });                 
         
-    });
-
-    test('sorting lo-hi', async (
-        /** @type {{ app: import('../pages/Application').Application }} */{ app },
-    ) => {
-        await app.login.navigate();
-        await app.login.performLogin('standard_user', 'secret_sauce');
-
-        const lohiOption = {sort: "lohi", getExpectedResult: (inventoryInitialOrder) => {
-             return inventoryInitialOrder.sort((a, b) => Number(a) - Number(b));
-        }}
-        
-        const inventoryInitialOrder = await app.inventory.inventoryPrice.allTextContents();
-        await app.inventory.sortDropdown.selectOption({ value: lohiOption.sort});
-        const inventoryInitialOrderToNumbers = inventoryInitialOrder.map((str) => parseFloat(str.replace('$', '')));
-        const actualOrder = ((await app.inventory.inventoryPrice.allTextContents()).map((str) => parseFloat(str.replace('$', ''))));
-        const expectedOrder = lohiOption.getExpectedResult(inventoryInitialOrderToNumbers)
-        expect(actualOrder).toEqual(expectedOrder);
-       
-    });
     
-    test('sorting hi-lo', async (
-        /** @type {{ app: import('../pages/Application').Application }} */{ app },
-    ) => {
-        await app.login.navigate();
-        await app.login.performLogin('standard_user', 'secret_sauce');
-
-        const hiloOption =  {sort: "hilo", getExpectedResultPrice: (productPriceInitialOrderToNumbers) => {
-            return productPriceInitialOrderToNumbers.sort((a, b) => Number(b) - Number(a));
-         }}
-
-        const inventoryInitialOrder = await app.inventory.inventoryPrice.allTextContents();
-        await app.inventory.sortDropdown.selectOption({ value: hiloOption.sort});
-        const inventoryInitialOrderToNumbers = inventoryInitialOrder.map((str) => parseFloat(str.replace('$', '')));
-        const actualOrder = ((await app.inventory.inventoryPrice.allTextContents()).map((str) => parseFloat(str.replace('$', ''))));
-        const expectedOrder = hiloOption.getExpectedResultPrice(inventoryInitialOrderToNumbers);
-        expect(actualOrder).toEqual(expectedOrder);
+    });                
         
-    });
-});
+ });
+
 
 
 
