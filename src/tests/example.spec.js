@@ -25,67 +25,76 @@ test.describe('Saucedemo app basic tests', () => {
     });
 });
 
-test.describe('Saucedemo Unit 10 tests', () => {
-    const sortOption = [
-        {sort: "za", sortByName: (inventoryInitialOrder) => {
-            return inventoryInitialOrder.sort((a, b) => b.localeCompare(a));
-            }},
-        {sort: "az", sortByName: (inventoryInitialOrder) => {
-                return inventoryInitialOrder.sort();
-            }},            
-        {sort: "lohi", sortByPrice: (inventoryInitialOrder) => {
-                return inventoryInitialOrder.sort((a, b) => Number(a) - Number(b));
-            }},
-        {sort: "hilo", getExpectedResultPrice: (productPriceInitialOrderToNumbers) => {
-                return productPriceInitialOrderToNumbers.sort((a, b) => Number(b) - Number(a));
-            }}
 
+
+test.describe('Saucedemo Unit 10 tests', () => {    
+
+    const sortByNameOptions = [
+        { sort: "za", sortByName: (inventoryInitialOrder) => inventoryInitialOrder.sort((a, b) => b.localeCompare(a)) },
+        { sort: "az", sortByName: (inventoryInitialOrder) => inventoryInitialOrder.sort() }
     ];
 
-    for(const option of sortOption) {
-        test(` inventory sorting by ${option.sort}`, async (
-            /** @type {{ app: import('../pages/Application').Application }} */{ app },
-        ) => {       
-             if (option.sortByName) {
-                const inventoryInitialOrder = await app.inventory.inventoryItemName.allTextContents();
-                await app.inventory.sortDropdown.selectOption({ value: option.sort});
-                const actualOrder = await app.inventory.inventoryItemName.allTextContents();
-                const expectedOrder = option.sortByName(inventoryInitialOrder)
-                expect(actualOrder).toEqual(expectedOrder);
+    for (const option of sortByNameOptions) {
+        test(`Inventory sorting by name: ${option.sort}`, async (
+            /** @type {{ app: import('../pages/Application').Application }} */ { app },
+        ) => {
+            const inventoryInitialOrder = await app.inventory.inventoryItemName.allTextContents();
+            await app.inventory.sortDropdown.selectOption({ value: option.sort });
+            const actualOrder = await app.inventory.inventoryItemName.allTextContents();
+            const expectedOrder = option.sortByName(inventoryInitialOrder);
+            expect(actualOrder).toEqual(expectedOrder);
+        });
+    };
 
-             }  
-             if (option.sortByPrice) {
-                const inventoryInitialOrder = await app.inventory.inventoryPrice.allTextContents();
-                await app.inventory.sortDropdown.selectOption({ value: option.sort});
-                const inventoryInitialOrderToNumbers = inventoryInitialOrder.map((str) => parseFloat(str.replace('$', '')));
-                const actualOrder = ((await app.inventory.inventoryPrice.allTextContents()).map((str) => parseFloat(str.replace('$', ''))));
-                const expectedOrder = option.sortByPrice(inventoryInitialOrderToNumbers)
-                expect(actualOrder).toEqual(expectedOrder);
+    const sortByPriceOptions = [
+        { sort: "lohi", sortByPrice: (inventoryInitialOrder) => inventoryInitialOrder.sort((a, b) => a - b) },
+        { sort: "hilo", sortByPrice: (inventoryInitialOrder) => inventoryInitialOrder.sort((a, b) => b - a) }
+    ];
 
-             }    
-          
-            
-         });
-
-    };      
+    for (const option of sortByPriceOptions) {
+        test(`Inventory sorting by price: ${option.sort}`, async (
+            /** @type {{ app: import('../pages/Application').Application }} */ { app },
+        ) => {
+            const inventoryInitialOrder = await app.inventory.inventoryPrice.allTextContents();
+            const inventoryInitialOrderToNumbers = inventoryInitialOrder.map((str) => parseFloat(str.replace('$', '')));
+            await app.inventory.sortDropdown.selectOption({ value: option.sort });
+            const actualOrder = (await app.inventory.inventoryPrice.allTextContents()).map((str) => parseFloat(str.replace('$', '')));
+            const expectedOrder = option.sortByPrice(inventoryInitialOrderToNumbers);
+            expect(actualOrder).toEqual(expectedOrder);
+        });
+    };
+      
    
-    test('adding to cart several products', async (
+    test.only('adding to cart several products', async (
         /** @type {{ app: import('../pages/Application').Application }} */{ app },
     ) => {    
-        const addedProducts =  await app.inventory.addRandomProductsToCart();    
-        await app.baseSwagLab.openCartPage();
-        const cartItemNames = await app.shoppingCart.getCartNames();
-        const cartItemDescriptions = await app.shoppingCart.getCartDescriptions();
-        const cartItemPrices = await app.shoppingCart.getCartPrices();
+        const inventoryList = await app.inventory.getInventoryItemsList();
+        const amount = inventoryList.length;
 
-        addedProducts.forEach((item) => {
-            expect(cartItemNames).toContain(item.name);
-            expect(cartItemDescriptions).toContain(item.description);
-            expect(cartItemPrices).toContain(item.price);
-        });                 
-        
+        const randomInventories = await app.inventory.calculateRandomIndex(amount, 2);
+        const addedInventoriesData = await app.inventory.addRandomInventoriesToCart(randomInventories);
+        await app.baseSwagLab.openCartPage();
+        const inventoryAddedToCart = await app.shoppingCart.getCartItemsList();
+
+        for (const i in addedInventoriesData) {
+            expect(addedInventoriesData[i].name).toEqual(inventoryAddedToCart[i].name);
+            expect(addedInventoriesData[i].description).toEqual(inventoryAddedToCart[i].description);
+            expect(addedInventoriesData[i].price).toEqual(inventoryAddedToCart[i].price);
+        }                  
     
-    });                
+    }); 
+
+    // test('checkout flow', async (
+    //     /** @type {{ app: import('../pages/Application').Application }} */{ app },
+    // ) => {    
+    //     const addedProducts = await app.inventory.addRandomProductsToCart(2);    
+    //     await app.baseSwagLab.openCartPage();
+    //     await app.shoppingCart.openCheckoutPage();
+    //     await app.customerInfo.fillUserData();      
+
+                       
+    
+    // });                    
         
  });
 

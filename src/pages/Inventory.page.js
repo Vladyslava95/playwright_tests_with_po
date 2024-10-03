@@ -21,26 +21,49 @@ export class InventoryPage extends BaseSwagLabPage {
 
    async addItemToCartById(id) {
         await this.addItemToCartButton.nth(id).click();
-     } 
-   async addRandomProductsToCart() {
-          const inventories = await this.addItemToCartButton.all();  
-          const randomNum =  Math.max(1, Math.floor(Math.random() * inventories.length));; 
-          const addedInventories = [];  
-          const randomIndex = Array.from({ length: randomNum }, () => 
-               Math.floor(Math.random() *inventories.length)
-           );
-               
-          for (let index of randomIndex) {
-              const inventoryName = await this.inventoryItemName.nth(index).textContent();
-              const inventoryDescription = await this.inventoryDescription.nth(index).textContent();
-              const inventoryPrice = await this.inventoryPrice.nth(index).textContent();
-              
-              addedInventories.push({ name: inventoryName.trim(), description: inventoryDescription.trim(), price: inventoryPrice.trim() });
-              
-              await inventories[index].click();
-          } 
-           return addedInventories;
-      }
-  }   
-    
+    } 
 
+     async getInventoryItemsList() {
+        return this.getItemsListData(await this.inventoryItems.all());
+    }
+    
+    async getItemsListData(items) {
+        const itemsData = [];
+    
+        for (const item of items) {
+            const name = await item.locator(this.inventoryItemName).textContent();
+            const description = await item.locator(this.inventoryDescription).textContent();
+            let price = await item.locator(this.inventoryPrice).textContent();
+            price = price.replace('$', '');
+    
+            itemsData.push({
+                name,
+                description,
+                price,
+            });
+        }
+        return itemsData;
+    }
+
+    async addRandomInventoriesToCart(array) {            
+        const inventoryItemsAvailable = await this.inventoryItems.all();        
+        const inventoryItemsAdded = [];       
+        
+        for (const index of array) {
+            await inventoryItemsAvailable[index].locator(this.addItemToCartButton).click();
+            inventoryItemsAdded.push(inventoryItemsAvailable[index]);
+        }       
+       
+        return this.getItemsListData(inventoryItemsAdded);
+    }
+   
+    async calculateRandomIndex(itemAmount, count) {
+        const indexes = new Set();    
+        
+        while (indexes.size < count) {
+            const randomIndex = Math.floor(Math.random() * itemAmount);
+            indexes.add(randomIndex);
+        }    
+        return Array.from(indexes); 
+    }
+}
