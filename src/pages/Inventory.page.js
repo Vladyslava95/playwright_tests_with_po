@@ -28,20 +28,19 @@ export class InventoryPage extends BaseSwagLabPage {
     }
     
     async getItemsListData(items) {
-        const itemsData = [];
-    
-        for (const item of items) {
+        const itemsData = await Promise.all(items.map(async (item) => {
             const name = await item.locator(this.inventoryItemName).textContent();
             const description = await item.locator(this.inventoryDescription).textContent();
             let price = await item.locator(this.inventoryPrice).textContent();
             price = price.replace('$', '');
-    
-            itemsData.push({
+            
+            return {
                 name,
                 description,
                 price,
-            });
-        }
+            };
+        }));
+        
         return itemsData;
     }
 
@@ -57,7 +56,7 @@ export class InventoryPage extends BaseSwagLabPage {
         return this.getItemsListData(inventoryItemsAdded);
     }
    
-    async calculateRandomIndex(itemAmount, count) {
+    async calculateRandomItemsArray(itemAmount, count) {
         const indexes = new Set();    
         
         while (indexes.size < count) {

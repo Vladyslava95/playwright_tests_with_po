@@ -71,7 +71,7 @@ test.describe('Saucedemo Unit 10 tests', () => {
         const inventoryList = await app.inventory.getInventoryItemsList();
         const amount = inventoryList.length;
 
-        const randomInventories = await app.inventory.calculateRandomIndex(amount, 2);
+        const randomInventories = await app.inventory.calculateRandomItemsArray(amount, 2);
         const addedInventoriesData = await app.inventory.addRandomInventoriesToCart(randomInventories);
         await app.baseSwagLab.openCartPage();
         const inventoryAddedToCart = await app.shoppingCart.getCartItemsList();
@@ -82,19 +82,7 @@ test.describe('Saucedemo Unit 10 tests', () => {
             expect(addedInventoriesData[i].price).toEqual(inventoryAddedToCart[i].price);
         }                  
     
-    }); 
-
-    // test('checkout flow', async (
-    //     /** @type {{ app: import('../pages/Application').Application }} */{ app },
-    // ) => {    
-    //     const addedProducts = await app.inventory.addRandomProductsToCart(2);    
-    //     await app.baseSwagLab.openCartPage();
-    //     await app.shoppingCart.openCheckoutPage();
-    //     await app.customerInfo.fillUserData();      
-
-                       
-    
-    // });                    
+    });                      
         
  });
 

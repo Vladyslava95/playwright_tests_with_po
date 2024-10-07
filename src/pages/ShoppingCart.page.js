@@ -40,21 +40,19 @@ export class ShoppingCartPage extends BaseSwagLabPage {
         return this.getItemsListData(await this.cartItems.all());
     }
     async getItemsListData(items) {
-        const itemsData = [];
-    
-        for (const item of items) {
+        const itemsData = await Promise.all(items.map(async (item) => {
             const name = await item.locator(this.cartItemName).textContent();
             const description = await item.locator(this.cartDescription).textContent();
             let price = await item.locator(this.cartPrice).textContent();
             price = price.replace('$', '');
     
-            itemsData.push({
+            return {
                 name,
                 description,
                 price,
-            });
-        }
+            };
+        }));
+        
         return itemsData;
-    }
-  
+    }  
 }
