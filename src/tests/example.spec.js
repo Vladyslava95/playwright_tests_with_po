@@ -65,7 +65,7 @@ test.describe('Saucedemo Unit 10 tests', () => {
     };
       
    
-    test.only('adding to cart several products', async (
+    test('adding to cart several products', async (
         /** @type {{ app: import('../pages/Application').Application }} */{ app },
     ) => {    
         const inventoryList = await app.inventory.getInventoryItemsList();
@@ -85,6 +85,38 @@ test.describe('Saucedemo Unit 10 tests', () => {
     });                      
         
  });
+
+ test('checkout flow', async (
+        /** @type {{ app: import('../pages/Application').Application }} */{ app },
+    ) => {    
+        const inventoryList = await app.inventory.getInventoryItemsList();
+        const amount = inventoryList.length;
+        const randomInventories = await app.inventory.calculateRandomItemsArray(amount, 2);
+        const addedInventoriesData = await app.inventory.addRandomInventoriesToCart(randomInventories);
+
+        await app.baseSwagLab.openCartPage();   
+        await app.checkoutFirstStep.openCheckoutPage();
+        await app.checkoutFirstStep.fillUserData();  
+        await app.checkoutFirstStep.openCheckoutTwoPage(); 
+        const checkoutInventoryItems = await app.checkoutTwoStep.getCheckoutItemsLst();
+
+        for (const i in addedInventoriesData) {
+            expect(addedInventoriesData[i].name).toEqual(checkoutInventoryItems[i].name);
+            expect(addedInventoriesData[i].description).toEqual(checkoutInventoryItems[i].description);
+            expect(addedInventoriesData[i].price).toEqual(checkoutInventoryItems[i].price);
+        } 
+        
+        const subTotalActual = await app.checkoutTwoStep.getSubTotal();
+        const subTotalExpected = await app.checkoutTwoStep.calculateItemTotal(inventoryList, randomInventories);
+        expect(subTotalActual).toEqual(subTotalExpected);
+        const tax = await app.checkoutTwoStep.getTax();
+        const totalPriceActual = await app.checkoutTwoStep.getPriceTotal();
+
+        let totalPriceExpected = subTotalExpected + tax;        
+        totalPriceExpected = parseFloat(totalPriceExpected.toFixed(2));       
+        expect(totalPriceActual).toEqual(totalPriceExpected);
+                       
+     }); 
 
 
 
