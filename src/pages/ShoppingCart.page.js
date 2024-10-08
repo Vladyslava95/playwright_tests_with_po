@@ -2,19 +2,26 @@ import { BaseSwagLabPage } from './BaseSwagLab.page';
 
 export class ShoppingCartPage extends BaseSwagLabPage {
     url = '/cart.html';
+   
 
-    cartItemSelector = '.cart_item';
+    get removeItemSelector() {return this.page.locator ('[id^="remove"]')};
 
-    removeItemSelector = '[id^="remove"]';
+    get cartItemName() { return this.page.locator('.inventory_item_name')};
 
-    headerTitle = this.page.locator('.title');
+    get cartDescription() { return this.page.locator('.inventory_item_desc')};
 
-    cartItems = this.page.locator(this.cartItemSelector);
+    get cartPrice() {return this.page.locator('.inventory_item_price')}; 
+
+    get headerTitle() {return this.page.locator('.title')};
+    
+    get cartItems() { return this.page.locator('.cart_item'); }
+    
+    get checkoutButton () {return this.page.locator ('[id^="checkout"]')};
 
     // async below added to show the function returns a promise
-    async getCartItemByName(name) {
-        return this.page.locator(this.cartItemSelector, { hasText: name });
-    }
+     async getCartItemByName(name) {
+        return this.page.locator(this.cartItemSelector, { hasText: name});
+    }             
 
     async removeCartItemByName(name) {
         const item = await this.getCartItemByName(name);
@@ -24,4 +31,28 @@ export class ShoppingCartPage extends BaseSwagLabPage {
     async removeCartItemById(id) {
         await this.cartItems.nth(id).locator(this.removeItemSelector).click();
     }
+   
+    async openCheckoutPage() {
+        return this.checkoutButton.click();
+    }  
+    
+    async getCartItemsList() {
+        return this.getItemsListData(await this.cartItems.all());
+    }
+    async getItemsListData(items) {
+        const itemsData = await Promise.all(items.map(async (item) => {
+            const name = await item.locator(this.cartItemName).textContent();
+            const description = await item.locator(this.cartDescription).textContent();
+            let price = await item.locator(this.cartPrice).textContent();
+            price = price.replace('$', '');
+    
+            return {
+                name,
+                description,
+                price,
+            };
+        }));
+        
+        return itemsData;
+    }  
 }

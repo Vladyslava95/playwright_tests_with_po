@@ -1,23 +1,19 @@
 import { expect } from '@playwright/test';
 import { test } from '../fixtures/base';
 
-test.describe('Saucedemo app basic tests', () => {
-    test('should login successfully', async (
-        /** @type {{ app: import('../pages/Application').Application }} */{ app },
-    ) => {
-        await app.login.navigate();
-        await app.login.performLogin('standard_user', 'secret_sauce');
+test.beforeEach(async ({app}) => {   
+    await app.login.navigate();
+    await app.login.performLogin('standard_user', 'secret_sauce');
+    await expect(app.inventory.headerTitle).toBeVisible();
+    expect(await app.inventory.inventoryItems.count()).toBeGreaterThanOrEqual(1);
+});
 
-        await expect(app.inventory.headerTitle).toBeVisible();
 
-        expect(await app.inventory.inventoryItems.count()).toBeGreaterThanOrEqual(1);
-    });
+test.describe('Saucedemo app basic tests', () => {   
 
     test('should add and remove product from the cart', async (
         /** @type {{ app: import('../pages/Application').Application }} */{ app },
-    ) => {
-        await app.login.navigate();
-        await app.login.performLogin('standard_user', 'secret_sauce');
+    ) => {        
         await app.inventory.addItemToCartById(0);
         expect(await app.inventory.getNumberOfItemsInCart()).toBe('1');
 
@@ -28,3 +24,68 @@ test.describe('Saucedemo app basic tests', () => {
         await expect(app.shoppingCart.cartItems).not.toBeAttached();
     });
 });
+
+
+
+test.describe('Saucedemo Unit 10 tests', () => {    
+
+    const sortByNameOptions = [
+        { sort: "za", sortByName: (inventoryInitialOrder) => inventoryInitialOrder.sort((a, b) => b.localeCompare(a)) },
+        { sort: "az", sortByName: (inventoryInitialOrder) => inventoryInitialOrder.sort() }
+    ];
+
+    for (const option of sortByNameOptions) {
+        test(`Inventory sorting by name: ${option.sort}`, async (
+            /** @type {{ app: import('../pages/Application').Application }} */ { app },
+        ) => {
+            const inventoryInitialOrder = await app.inventory.inventoryItemName.allTextContents();
+            await app.inventory.sortDropdown.selectOption({ value: option.sort });
+            const actualOrder = await app.inventory.inventoryItemName.allTextContents();
+            const expectedOrder = option.sortByName(inventoryInitialOrder);
+            expect(actualOrder).toEqual(expectedOrder);
+        });
+    };
+
+    const sortByPriceOptions = [
+        { sort: "lohi", sortByPrice: (inventoryInitialOrder) => inventoryInitialOrder.sort((a, b) => a - b) },
+        { sort: "hilo", sortByPrice: (inventoryInitialOrder) => inventoryInitialOrder.sort((a, b) => b - a) }
+    ];
+
+    for (const option of sortByPriceOptions) {
+        test(`Inventory sorting by price: ${option.sort}`, async (
+            /** @type {{ app: import('../pages/Application').Application }} */ { app },
+        ) => {
+            const inventoryInitialOrder = await app.inventory.inventoryPrice.allTextContents();
+            const inventoryInitialOrderToNumbers = inventoryInitialOrder.map((str) => parseFloat(str.replace('$', '')));
+            await app.inventory.sortDropdown.selectOption({ value: option.sort });
+            const actualOrder = (await app.inventory.inventoryPrice.allTextContents()).map((str) => parseFloat(str.replace('$', '')));
+            const expectedOrder = option.sortByPrice(inventoryInitialOrderToNumbers);
+            expect(actualOrder).toEqual(expectedOrder);
+        });
+    };
+      
+   
+    test.only('adding to cart several products', async (
+        /** @type {{ app: import('../pages/Application').Application }} */{ app },
+    ) => {    
+        const inventoryList = await app.inventory.getInventoryItemsList();
+        const amount = inventoryList.length;
+
+        const randomInventories = await app.inventory.calculateRandomItemsArray(amount, 2);
+        const addedInventoriesData = await app.inventory.addRandomInventoriesToCart(randomInventories);
+        await app.baseSwagLab.openCartPage();
+        const inventoryAddedToCart = await app.shoppingCart.getCartItemsList();
+
+        for (const i in addedInventoriesData) {
+            expect(addedInventoriesData[i].name).toEqual(inventoryAddedToCart[i].name);
+            expect(addedInventoriesData[i].description).toEqual(inventoryAddedToCart[i].description);
+            expect(addedInventoriesData[i].price).toEqual(inventoryAddedToCart[i].price);
+        }                  
+    
+    });                      
+        
+ });
+
+
+
+

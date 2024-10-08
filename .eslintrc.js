@@ -24,6 +24,12 @@ module.exports = {
             {
                 SwitchCase: 1,
             },
+            {
+                "linebreak-style": ["error", "unix"]                
+            },
+            {
+                "max-classes-per-file": "off"
+            }
         ],
         'max-len': ['error', {
             code: 120,
