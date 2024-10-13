@@ -18,27 +18,23 @@ export class CheckoutTwoStepPage extends BaseSwagLabPage {
 
     get itemsTotal() {return this.page.locator('.summary_total_label')}; 
 
-   async getCheckoutItemsLst() {
-      return this.getItemsListData(await this.inventoryItems.all());
+    async getCheckoutItemsList() {
+      const items = await this.inventoryItems.all();
+      const itemsData = await Promise.all(items.map(async (item) => {
+          const name = await item.locator(this.inventoryItemName).textContent();
+          const description = await item.locator(this.inventoryDescription).textContent();
+          let price = await item.locator(this.inventoryPrice).textContent();
+          price = price.replace('$', '');
+  
+          return {
+              name,
+              description,
+              price,
+          };
+      }));
+      return itemsData;
   }
   
-  async getItemsListData(items) {
-       const itemsData = await Promise.all(items.map(async (item) => {
-       const name = await item.locator(this.inventoryItemName).textContent();
-       const description = await item.locator(this.inventoryDescription).textContent();
-       let price = await item.locator(this.inventoryPrice).textContent();
-       price = price.replace('$', '');
-
-       return {
-           name,
-           description,
-           price,
-       };
-   
-      }));
-   
-   return itemsData;
-} 
 async getPriceTotal() {
    let priceTotal = await this.itemsTotal.textContent();
    priceTotal = parseFloat(priceTotal.replace('Total: $', ''));

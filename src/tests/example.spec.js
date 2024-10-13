@@ -98,13 +98,14 @@ test.describe('Saucedemo Unit 10 tests', () => {
         await app.checkoutFirstStep.openCheckoutPage();
         await app.checkoutFirstStep.fillUserData();  
         await app.checkoutFirstStep.openCheckoutTwoPage(); 
-        const checkoutInventoryItems = await app.checkoutTwoStep.getCheckoutItemsLst();
+        const checkoutInventoryItems = await app.checkoutTwoStep.getCheckoutItemsList();
 
+   
         for (const i in addedInventoriesData) {
-            expect(addedInventoriesData[i].name).toEqual(checkoutInventoryItems[i].name);
-            expect(addedInventoriesData[i].description).toEqual(checkoutInventoryItems[i].description);
-            expect(addedInventoriesData[i].price).toEqual(checkoutInventoryItems[i].price);
-        } 
+            expect.soft(addedInventoriesData[i].name).toEqual(checkoutInventoryItems[i].name);
+            expect.soft(addedInventoriesData[i].description).toEqual(checkoutInventoryItems[i].description);
+            expect.soft(addedInventoriesData[i].price).toEqual(checkoutInventoryItems[i].price);
+        }
         
         const subTotalActual = await app.checkoutTwoStep.getSubTotal();
         const subTotalExpected = await app.checkoutTwoStep.calculateItemTotal(inventoryList, randomInventories);

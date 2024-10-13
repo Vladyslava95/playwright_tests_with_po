@@ -15,15 +15,12 @@ export class CheckoutFirstStepPage extends BaseSwagLabPage {
     
     get continueButton () {return this.page.locator ('[id="continue"]')};  
 
-     async fillUserData () {
-        const firstName = casual.first_name;
-        const lastName = casual.last_name;
-        const zip = casual.building_number;
-
-        await this.customerName.fill(firstName);
-        await this.customerSurname.fill(lastName);
-        await this.customerZipcode.fill(zip);
-     }    
+    async fillUserData(firstName = casual.first_name, lastName = casual.last_name, zip = casual.building_number) {
+      await this.customerName.fill(firstName);
+      await this.customerSurname.fill(lastName);
+      await this.customerZipcode.fill(zip);
+  }
+     
      async openCheckoutPage () {   
         await this.checkoutButton.click();        
      }  
